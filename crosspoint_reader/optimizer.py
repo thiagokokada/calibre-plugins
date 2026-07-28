@@ -388,9 +388,12 @@ def _fix_xhtml(text, log):
             for img in root.iter('img'):
                 modified |= _fix_img_element(img)
             if modified:
+                # tostring() writes out the element tree alone, so the DOCTYPE
+                # has to be handed back or the rewrite drops it — and a
+                # document that loses its DTD loses its named entities with it.
                 text = etree.tostring(
-                    root, encoding='unicode',
-                    xml_declaration=False)
+                    root, encoding='unicode', xml_declaration=False,
+                    doctype=root.getroottree().docinfo.doctype or None)
                 if not text.lstrip().startswith('<?xml'):
                     text = '<?xml version="1.0" encoding="utf-8"?>\n' + text
     except Exception:
@@ -459,7 +462,8 @@ def _fix_opf(text, log):
                     del it.attrib['properties']
 
         _ensure_cover_meta_lxml(root, opf_ns, log)
-        out = etree.tostring(root, encoding='unicode', xml_declaration=False)
+        out = etree.tostring(root, encoding='unicode', xml_declaration=False,
+                             doctype=root.getroottree().docinfo.doctype or None)
         if not out.lstrip().startswith('<?xml'):
             out = '<?xml version="1.0" encoding="utf-8"?>\n' + out
         return out
